@@ -1,0 +1,24 @@
+####
+# Before building the container image run:
+#
+# make build
+#
+# Then, build the image with:
+#
+# docker build -f build/package/Dockerfile.single-stage -t gocrudperson/single-stage .
+#
+# Then run the container using:
+#
+# docker run -i --rm -p 8080:8080 gocrudperson/single-stage
+#
+###
+
+FROM alpine:3.13
+
+WORKDIR /app
+
+COPY bin/main-linux-amd64 main
+
+EXPOSE 8080
+
+CMD [ "/app/main" ]

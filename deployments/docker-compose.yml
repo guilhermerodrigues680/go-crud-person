@@ -1,0 +1,14 @@
+version: "2.4"
+
+services:
+  gocrudperson:
+    build:
+      context: ..
+      dockerfile: build/package/Dockerfile
+    image: gocrudperson:${APPLICATION_VERSION}
+    ports: 
+      - "8080:8080"
+
+# A variavel de ambiente APPLICATION_VERSION vem do arquivo '.env'
+# Use `docker-compose -f deployments/docker-compose.yml config` para ver este arquivo compilado
+# Use `docker-compose -f deployments/docker-compose.yml up` para executar o servico
