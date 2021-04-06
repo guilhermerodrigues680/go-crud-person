@@ -2,18 +2,6 @@ package service
 
 import "gocrudperson/internal/model"
 
-// // Person representa uma pessoa no sistema
-// type Person struct {
-// 	ID   int64  `json:"id"`
-// 	Name string `json:"name"`
-// }
-
-// PersonCRUD operações de CRUD para a pessoa
-// type PersonCRUD interface {
-// 	// Create(string) (Person, error)
-// 	// Create(string) Person
-// }
-
 // PersonCRUD operações de CRUD para a pessoa
 type PersonCRUD interface {
 	PersonCreator

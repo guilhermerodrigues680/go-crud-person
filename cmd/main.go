@@ -1,21 +1,9 @@
 package main
 
-import (
-	"log"
-	"net/http"
+import "gocrudperson/internal/api"
 
-	"gocrudperson/internal/api/v1/controller"
-
-	"github.com/gorilla/mux"
-)
-
-const host string = ":8080"
+const apiAddr string = ":8080"
 
 func main() {
-	r := mux.NewRouter()
-
-	r.HandleFunc("/api/v1", controller.RootHandler)
-
-	log.Println("go-crud-person. Listening on: " + host)
-	http.ListenAndServe(host, r)
+	api.Listen(apiAddr)
 }
