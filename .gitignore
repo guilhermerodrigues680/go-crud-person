@@ -1,2 +1,5 @@
 /bin
 .DS_Store
+
+# debug bin
+/cmd/__debug_bin
