@@ -12,35 +12,45 @@ import (
 	"github.com/gorilla/mux"
 )
 
-func getWebDir() (string, error) {
+func getWebAndOpenApiDir() (string, string, error) {
 	ex, err := os.Executable()
 	if err != nil {
-		return "", err
+		return "", "", err
 	}
 
 	exPath := filepath.Dir(ex)
-	dir, err := filepath.Abs(exPath + "/../web")
+	dirWeb, err := filepath.Abs(exPath + "/../web")
 	if err != nil {
-		return "", err
+		return "", "", err
 	}
 
-	return dir, nil
+	dirOpenApi, err := filepath.Abs(exPath + "/../api/openapi-spec")
+	if err != nil {
+		return "", "", err
+	}
+
+	return dirWeb, dirOpenApi, nil
 }
 
 func Listen(addr string) {
 	r := mux.NewRouter()
 
-	dir, err := getWebDir()
+	dirWeb, dirOpenApi, err := getWebAndOpenApiDir()
 	if err != nil {
 		panic(err)
 	}
 
 	r.Use(middleware.LoggingMiddleware)
-	r.PathPrefix("/").Handler(http.FileServer(http.Dir(dir)))
 	r.HandleFunc("/api/v1", controller.RootHandler).Methods(http.MethodGet)
+	r.HandleFunc("/api/v1/", controller.RootHandler).Methods(http.MethodGet)
 	controller.PersonRouter(r.PathPrefix("/api/v1/person").Subrouter())
 
-	log.Printf("Web static dir: %s\n", dir)
+	// Static Files
+	r.PathPrefix("/api/openapi-spec/").Handler(http.StripPrefix("/api/openapi-spec/", http.FileServer(http.Dir(dirOpenApi))))
+	r.PathPrefix("/").Handler(http.FileServer(http.Dir(dirWeb)))
+
+	log.Printf("Web static dir: %s\n", dirWeb)
+	log.Printf("OpenAPI static dir: %s\n", dirOpenApi)
 	log.Printf("Listening on: %s\n", addr)
 	log.Fatal(http.ListenAndServe(addr, r))
 }

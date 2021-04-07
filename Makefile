@@ -4,11 +4,15 @@ hello:
 build:
 	scripts/build.sh
 
-help: Makefile
+cross:
+	scripts/build-cross.sh
+
+help:
 	@echo
 	@echo " Comandos disponiveis"
 	@echo
-	@echo " make build"
+	@echo " \`make build\` Constroe apenas o binário do Linux."
+	@echo " \`make cross\` Constroe todos os binários para todas as plataformas."
 	@echo
 
 # disallow any parallelism (-j) for Make. This is necessary since some
@@ -16,4 +20,4 @@ help: Makefile
 # under parallel conditions.
 .NOTPARALLEL:
 
-.PHONY: hello build help
+.PHONY: hello build cross help
