@@ -14,7 +14,7 @@ func Listen(addr string) {
 	r := mux.NewRouter()
 
 	r.Use(middleware.LoggingMiddleware)
-	r.HandleFunc("/api/v1", controller.RootHandler)
+	r.HandleFunc("/api/v1", controller.RootHandler).Methods(http.MethodGet)
 	controller.PersonRouter(r.PathPrefix("/api/v1/person").Subrouter())
 
 	log.Println("go-crud-person. Listening on: " + addr)
