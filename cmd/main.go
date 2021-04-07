@@ -2,15 +2,12 @@ package main
 
 import (
 	"gocrudperson/internal/api"
+	"gocrudperson/internal/config"
 	"log"
 )
 
-const (
-	version        = "0.0.1-alpha.0"
-	apiAddr string = ":8080"
-)
-
 func main() {
-	log.Printf("go-crud-person %s (powered by guilhermerodrigues680).", version)
-	api.Listen(apiAddr)
+	conf := config.GetConfig()
+	log.Printf("%s %s (powered by guilhermerodrigues680)", conf.AppName, conf.Version)
+	api.NewServer().Listen(conf.ServerAddr)
 }

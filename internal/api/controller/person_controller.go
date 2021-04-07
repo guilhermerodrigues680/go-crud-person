@@ -4,43 +4,79 @@ import (
 	"encoding/json"
 	"fmt"
 	"gocrudperson/internal/model"
-	"gocrudperson/internal/service"
 	"log"
 	"net/http"
 	"strconv"
+	"time"
 
 	"github.com/gorilla/mux"
 )
 
-var personService service.PersonCRUD = new(service.PersonService)
-
-func genericErrorHandler(w http.ResponseWriter, err error) {
-	log.Println(err)
-	w.WriteHeader(http.StatusInternalServerError)
-	fmt.Fprintf(w, "Erro: %s", err)
+// PersonCRUD operações de CRUD para a pessoa
+type PersonCRUD interface {
+	Create(model.Person) (model.Person, error)
+	Read(int) (model.Person, error)
+	ReadAll() ([]model.Person, error)
+	Update(int, model.Person) (model.Person, error)
+	Delete(int) error
 }
 
-func readAllHandler(w http.ResponseWriter, r *http.Request) {
-	persons, err := personService.ReadAll()
+type Controller struct {
+	s PersonCRUD
+}
+
+func NewPersonController(s PersonCRUD) Controller {
+	return Controller{s: s}
+}
+
+func genericErrorHandler(w *http.ResponseWriter, r *http.Request, err error) {
+	type GenericError struct {
+		Timestamp time.Time `json:"timestamp"`
+		Status    int       `json:"status"`
+		Error     string    `json:"error"`
+		Message   string    `json:"message"`
+		Path      string    `json:"path"`
+	}
+
+	log.Printf("genericErrorHandler - Erro: %s", err)
+
+	genericError := GenericError{
+		Timestamp: time.Now().UTC(),
+		Status:    http.StatusInternalServerError,
+		Error:     http.StatusText(http.StatusInternalServerError),
+		Message:   err.Error(),
+		Path:      r.RequestURI,
+	}
+
+	(*w).Header().Set("Content-Type", "application/json")
+	(*w).WriteHeader(http.StatusInternalServerError)
+	json.NewEncoder(*w).Encode(genericError)
+}
+
+func (c Controller) ReadAllHandler(w http.ResponseWriter, r *http.Request) {
+	type PersonResponse struct {
+		Persons []model.Person `json:"persons"`
+	}
+
+	persons, err := c.s.ReadAll()
 	if err != nil {
-		genericErrorHandler(w, err)
+		genericErrorHandler(&w, r, err)
 		return
 	}
 
-	mapObj := make(map[string][]model.Person)
-	mapObj["persons"] = persons
+	personResponse := PersonResponse{Persons: persons}
 	w.Header().Set("Content-Type", "application/json")
-	json.NewEncoder(w).Encode(mapObj)
+	json.NewEncoder(w).Encode(personResponse)
 }
 
-func readHandler(w http.ResponseWriter, r *http.Request) {
+func (c Controller) ReadHandler(w http.ResponseWriter, r *http.Request) {
 	id, err := strconv.Atoi(mux.Vars(r)["id"])
 	if err != nil {
-		genericErrorHandler(w, err)
+		genericErrorHandler(&w, r, err)
 		return
 	}
 
-	person, err := personService.Read(id)
+	person, err := c.s.Read(id)
 	if err != nil {
 		w.WriteHeader(http.StatusNotFound)
 		fmt.Fprintf(w, "Erro: %s", err)
@@ -51,14 +87,14 @@ func readHandler(w http.ResponseWriter, r *http.Request) {
 	json.NewEncoder(w).Encode(person)
 }
 
-func deleteHandler(w http.ResponseWriter, r *http.Request) {
+func (c Controller) DeleteHandler(w http.ResponseWriter, r *http.Request) {
 	id, err := strconv.Atoi(mux.Vars(r)["id"])
 	if err != nil {
-		genericErrorHandler(w, err)
+		genericErrorHandler(&w, r, err)
 		return
 	}
 
-	err = personService.Delete(id)
+	err = c.s.Delete(id)
 	if err != nil {
 		w.WriteHeader(http.StatusNotFound)
 		fmt.Fprintf(w, "Erro: %s", err)
@@ -68,34 +104,34 @@ func deleteHandler(w http.ResponseWriter, r *http.Request) {
 	w.WriteHeader(http.StatusNoContent)
 }
 
-func createHandler(w http.ResponseWriter, r *http.Request) {
+func (c Controller) CreateHandler(w http.ResponseWriter, r *http.Request) {
 	personBody := new(model.Person)
 	err := json.NewDecoder(r.Body).Decode(personBody)
 	if err != nil {
-		genericErrorHandler(w, err)
+		genericErrorHandler(&w, r, err)
 		return
 	}
 
-	person, err := personService.Create(*personBody)
+	person, err := c.s.Create(*personBody)
 	w.Header().Set("Content-Type", "application/json")
 	json.NewEncoder(w).Encode(person)
 }
 
-func updateHandler(w http.ResponseWriter, r *http.Request) {
+func (c Controller) UpdateHandler(w http.ResponseWriter, r *http.Request) {
 	personBody := new(model.Person)
 	err := json.NewDecoder(r.Body).Decode(personBody)
 	if err != nil {
-		genericErrorHandler(w, err)
+		genericErrorHandler(&w, r, err)
 		return
 	}
 
 	id, err := strconv.Atoi(mux.Vars(r)["id"])
 	if err != nil {
-		genericErrorHandler(w, err)
+		genericErrorHandler(&w, r, err)
 		return
 	}
 
-	person, err := personService.Update(id, *personBody)
+	person, err := c.s.Update(id, *personBody)
 	if err != nil {
 		w.WriteHeader(http.StatusNotFound)
 		fmt.Fprintf(w, "Erro: %s", err)
@@ -104,12 +140,4 @@ func updateHandler(w http.ResponseWriter, r *http.Request) {
 
 	w.Header().Set("Content-Type", "application/json")
 	json.NewEncoder(w).Encode(person)
-}
-
-func PersonRouter(s *mux.Router) {
-	s.HandleFunc("", readAllHandler).Methods(http.MethodGet)
-	s.HandleFunc("", createHandler).Methods(http.MethodPost)
-	s.HandleFunc("/{id:[0-9]+}", readHandler).Methods(http.MethodGet)
-	s.HandleFunc("/{id:[0-9]+}", updateHandler).Methods(http.MethodPut)
-	s.HandleFunc("/{id:[0-9]+}", deleteHandler).Methods(http.MethodDelete)
 }

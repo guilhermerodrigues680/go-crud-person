@@ -6,25 +6,32 @@ import (
 	"gocrudperson/internal/model"
 )
 
-type PersonRepositoryLocal struct{}
+type PersonRepositoryLocal struct {
+	persons []model.Person
+	pk      int
+}
 
-var persons []model.Person = make([]model.Person, 0)
-var pk int = 0
+func NewPersonRepositoryLocal() PersonRepositoryLocal {
+	return PersonRepositoryLocal{
+		persons: make([]model.Person, 0),
+		pk:      0,
+	}
+}
 
-func (PersonRepositoryLocal) Insert(newPerson model.Person) (model.Person, error) {
-	pk++
-	newPerson.ID = pk
-	persons = append(persons, newPerson)
-	fmt.Println(persons)
+func (r PersonRepositoryLocal) Insert(newPerson model.Person) (model.Person, error) {
+	r.pk++
+	newPerson.ID = r.pk
+	r.persons = append(r.persons, newPerson)
+	fmt.Println(r.persons)
 	return newPerson, nil
 }
 
-func (PersonRepositoryLocal) SelectAll() ([]model.Person, error) {
-	return persons, nil
+func (r PersonRepositoryLocal) SelectAll() ([]model.Person, error) {
+	return r.persons, nil
 }
 
-func (PersonRepositoryLocal) Select(id int) (model.Person, error) {
-	for _, person := range persons {
+func (r PersonRepositoryLocal) Select(id int) (model.Person, error) {
+	for _, person := range r.persons {
 		if person.ID == id {
 			return person, nil
 		}
@@ -32,22 +39,22 @@ func (PersonRepositoryLocal) Select(id int) (model.Person, error) {
 	return model.Person{}, errors.New("Não há uma pessoa cadastrada com o id")
 }
 
-func (PersonRepositoryLocal) Update(id int, newPerson model.Person) (model.Person, error) {
-	for index, person := range persons {
+func (r PersonRepositoryLocal) Update(id int, newPerson model.Person) (model.Person, error) {
+	for index, person := range r.persons {
 		if person.ID == id {
-			persons = append(persons[:index], persons[index+1:]...)
+			r.persons = append(r.persons[:index], r.persons[index+1:]...)
 			newPerson.ID = id
-			persons = append(persons, newPerson)
+			r.persons = append(r.persons, newPerson)
 			return newPerson, nil
 		}
 	}
 	return model.Person{}, errors.New("Não há uma pessoa cadastrada com o id")
 }
 
-func (PersonRepositoryLocal) Delete(id int) error {
-	for index, person := range persons {
+func (r PersonRepositoryLocal) Delete(id int) error {
+	for index, person := range r.persons {
 		if person.ID == id {
-			persons = append(persons[:index], persons[index+1:]...)
+			r.persons = append(r.persons[:index], r.persons[index+1:]...)
 			return nil
 		}
 	}

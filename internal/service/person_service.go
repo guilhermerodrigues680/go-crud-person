@@ -1,30 +1,40 @@
 package service
 
-import (
-	"gocrudperson/internal/model"
-	"gocrudperson/internal/repository"
-)
+import "gocrudperson/internal/model"
 
-type PersonService struct{}
-
-var personRepository repository.PersonRepository = new(repository.PersonRepositoryLocal)
-
-func (PersonService) Create(newPerson model.Person) (model.Person, error) {
-	return personRepository.Insert(newPerson)
+// PersonRepository representa um repositório de pessoas
+type PersonRepository interface {
+	Insert(model.Person) (model.Person, error)
+	Select(int) (model.Person, error)
+	SelectAll() ([]model.Person, error)
+	Update(int, model.Person) (model.Person, error)
+	Delete(int) error
 }
 
-func (PersonService) Read(id int) (model.Person, error) {
-	return personRepository.Select(id)
+type PersonService struct {
+	r PersonRepository
 }
 
-func (PersonService) ReadAll() ([]model.Person, error) {
-	return personRepository.SelectAll()
+func NewPersonService(r PersonRepository) PersonService {
+	return PersonService{r: r}
 }
 
-func (PersonService) Update(id int, newPerson model.Person) (model.Person, error) {
-	return personRepository.Update(id, newPerson)
+func (s PersonService) Create(newPerson model.Person) (model.Person, error) {
+	return s.r.Insert(newPerson)
 }
 
-func (PersonService) Delete(id int) error {
-	return personRepository.Delete(id)
+func (s PersonService) Read(id int) (model.Person, error) {
+	return s.r.Select(id)
+}
+
+func (s PersonService) ReadAll() ([]model.Person, error) {
+	return s.r.SelectAll()
+}
+
+func (s PersonService) Update(id int, newPerson model.Person) (model.Person, error) {
+	return s.r.Update(id, newPerson)
+}
+
+func (s PersonService) Delete(id int) error {
+	return s.r.Delete(id)
 }

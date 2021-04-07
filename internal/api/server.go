@@ -8,9 +8,14 @@ import (
 
 	"gocrudperson/internal/api/controller"
 	"gocrudperson/internal/api/middleware"
+	"gocrudperson/internal/api/route"
+	"gocrudperson/internal/repository"
+	"gocrudperson/internal/service"
 
 	"github.com/gorilla/mux"
 )
+
+type Server struct{}
 
 func getWebAndOpenApiDir() (string, string, error) {
 	ex, err := os.Executable()
@@ -32,18 +37,33 @@ func getWebAndOpenApiDir() (string, string, error) {
 	return dirWeb, dirOpenApi, nil
 }
 
-func Listen(addr string) {
+func getPersonRouter() route.PersonRouter {
+	r := repository.NewPersonRepositoryLocal()
+	s := service.NewPersonService(r)
+	c := controller.NewPersonController(s)
+	return route.NewPersonRouter(c)
+}
+
+func getRootRouter() route.RootRouter {
+	c := controller.NewRootController()
+	return route.NewRootRouter(c)
+}
+
+func NewServer() Server {
+	return Server{}
+}
+
+func (Server) Listen(addr string) {
 	r := mux.NewRouter()
+
+	r.Use(middleware.NewLoggingMiddleware().MiddlewareFunc)
+	getRootRouter().Handle(r.PathPrefix("/api/v1").Subrouter())
+	getPersonRouter().Handle(r.PathPrefix("/api/v1/person").Subrouter())
 
 	dirWeb, dirOpenApi, err := getWebAndOpenApiDir()
 	if err != nil {
 		panic(err)
 	}
-
-	r.Use(middleware.LoggingMiddleware)
-	r.HandleFunc("/api/v1", controller.RootHandler).Methods(http.MethodGet)
-	r.HandleFunc("/api/v1/", controller.RootHandler).Methods(http.MethodGet)
-	controller.PersonRouter(r.PathPrefix("/api/v1/person").Subrouter())
 
 	// Static Files
 	r.PathPrefix("/api/openapi-spec/").Handler(http.StripPrefix("/api/openapi-spec/", http.FileServer(http.Dir(dirOpenApi))))
